@@ -1,6 +1,9 @@
-if (!window.require && window.document && !window._nodeJSCompat_) {
+if (!window['require'] && window.document && !window['_nodeJSCompat_']) {
 
-    window._nodeJSCompat_ = new function() {
+    /**
+     * @constructor
+     */
+    function _NodeJSCompat_() {
 
         const that = this;
 
@@ -8,8 +11,8 @@ if (!window.require && window.document && !window._nodeJSCompat_) {
         // Public
 
         // Settings
-        this.pathPrefix        = '';
-        this.forceDownloads    = false;
+        this['pathPrefix']     = '';
+        this['forceDownloads'] = false;
 
         // Modules must have a global scope for reuse by other scripts
         this.modules           = {};
@@ -51,25 +54,25 @@ if (!window.require && window.document && !window._nodeJSCompat_) {
 
         // Status of a required module
         const ModuleStatus = {
-            NONE:          c++,
-            DOWNLOADING:   c++,
-            DOWNLOADED:    c++,
-            DOWNLOADERROR: c++,
-            PREPARING:     c++,
-            ABORTED:       c++,
-            SUCCESS:       c++
+            'NONE':          c++,
+            'DOWNLOADING':   c++,
+            'DOWNLOADED':    c++,
+            'DOWNLOADERROR': c++,
+            'PREPARING':     c++,
+            'ABORTED':       c++,
+            'SUCCESS':       c++
         }
 
-        statusStr = {};
-        statusStr[ModuleStatus.NONE]          = 'None';
-        statusStr[ModuleStatus.DOWNLOADING]   = 'Downloading';
-        statusStr[ModuleStatus.DOWNLOADED]    = 'Downloaded';
-        statusStr[ModuleStatus.DOWNLOADERROR] = 'Download error';
-        statusStr[ModuleStatus.PREPARING]     = 'Preparing';
-        statusStr[ModuleStatus.ABORTED]       = 'Aborted';
-        statusStr[ModuleStatus.SUCCESS]       = 'Success';
+        this['ModuleStatus'] = ModuleStatus;
 
-        this.ModuleStatus = ModuleStatus;
+        statusStr = {};
+        statusStr[ModuleStatus['NONE']]          = 'None';
+        statusStr[ModuleStatus['DOWNLOADING']]   = 'Downloading';
+        statusStr[ModuleStatus['DOWNLOADED']]    = 'Downloaded';
+        statusStr[ModuleStatus['DOWNLOADERROR']] = 'Download error';
+        statusStr[ModuleStatus['PREPARING']]     = 'Preparing';
+        statusStr[ModuleStatus['ABORTED']]       = 'Aborted';
+        statusStr[ModuleStatus['SUCCESS']]       = 'Success';
 
         const scriptAbortionMessage = "Aborting and defering script";
 
@@ -177,7 +180,7 @@ if (!window.require && window.document && !window._nodeJSCompat_) {
             return s;
         }
 
-        this.cleanScript = function() {
+        this['cleanScript'] = function() {
             var script = document.currentScript;
             script.innerHTML = script.innerHTML.replace(new RegExp(endMagicString + '[\\s\\S]*$'), '').replace(new RegExp('^[\\s\\S]*' + beginMagicString), '');
             script.patched = null;
@@ -198,7 +201,7 @@ if (!window.require && window.document && !window._nodeJSCompat_) {
                 /*
                 if (loglevel > 2) console.log('!!! Still pending: ' + pendingLen + ' script' + (pendingLen > 1 ? 's' : ''));
                 var scripts = [];
-                window._nodeJSCompat_.pendingScripts.forEach(function(item) {
+                window['_nodeJSCompat_'].pendingScripts.forEach(function(item) {
                     scripts.push(scriptName(item) + '(' + (item._requireIndex) + ')');
                 });
                 if (loglevel > 2) console.log('( ' + scripts.join(', ') + ' )');
@@ -212,6 +215,9 @@ if (!window.require && window.document && !window._nodeJSCompat_) {
             }
         };
 
+        /**
+         * @constructor
+         */
         function InternalError(description) {
             this.description = description;
             this.isInternalError = true;
@@ -243,7 +249,7 @@ if (!window.require && window.document && !window._nodeJSCompat_) {
 
             // Prevent firing of default error handler
             var onerror = window.onerror;
-            window.onerror = function(message, source, lineno, colno, error) {
+            window['onerror'] = function(message, source, lineno, colno, error) {
                 window.onerror = onerror;
                 if (message === scriptAbortionMessage || error === scriptAbortionMessage) return true;
                 return error && error.isInternalError;
@@ -298,7 +304,7 @@ if (!window.require && window.document && !window._nodeJSCompat_) {
         // Public functions
 
         // checkRunPendingScriptsNeeded needs to be accessible from the script
-        this.checkRunPendingScriptsNeeded = function() {
+        this['checkRunPendingScriptsNeeded'] = function() {
             if (asynchronous) {
                 if (!runningScriptsTimeout) {
                     runningScriptsTimeout = setTimeout(function() {
@@ -367,7 +373,7 @@ if (!window.require && window.document && !window._nodeJSCompat_) {
                 requireOneFile(info, currentScript, forceDownload);
             } else {
                 var module = that.modules[moduleID(file)];
-                if (module && module.status >= ModuleStatus.SUCCESS) {
+                if (module && module.status >= ModuleStatus['SUCCESS']) {
                     if (loglevel > 2) console.log('Already run successfully: ' + file);
                     return module.exports;
                 } else {
@@ -377,19 +383,22 @@ if (!window.require && window.document && !window._nodeJSCompat_) {
             }
         }
 
+        /**
+         * @constructor
+         */
         function Module(file) {
             var neededBy = [];
             var sourceCode = null;
             var ID = moduleID(file);
             var needing = [];
 
-            this.status = ModuleStatus.NONE;
+            this.status = ModuleStatus['NONE'];
 
             this.ID   = function() { return ID;   }
             this.file = function() { return file; }
             this.neededBy   = function() { return neededBy;   }
             this.needing    = function() { return needing;    }
-            this.sourceCode = function() { return sourceCode; }
+            this['sourceCode'] = function() { return sourceCode; }
 
             this.neededBys = function() {
                 if (neededBy.length == 0) return '';
@@ -420,30 +429,30 @@ if (!window.require && window.document && !window._nodeJSCompat_) {
         }
 
         Module.prototype.src = function() {
-            return `${window._nodeJSCompat_.pathPrefix}${this.file()}`;
+            return `${window['_nodeJSCompat_']['pathPrefix']}${this.file()}`;
         }
 
         Module.prototype.runWrappedCode = function() {
             (function () {
-                var module = {};
-                var moduleStore = module;
+                this['module'] = {};
+                var moduleStore = this['module'];
                 var error = true;
                 try {
-                    eval(this.sourceCode());
+                    eval('var module = this["module"];\n\n' + this['sourceCode']());
                     error = false;
-                    this.exports = module.exports;
+                    this.exports = this['module']['exports'];
                 } finally {}
-                if (module !== moduleStore) throw "Error: module was replaced in required file ${this.file()}";
+                if (this['module'] !== moduleStore) throw "Error: module was replaced in required file ${this.file()}";
                 if (loglevel > 1) {
-                    if (typeof module.exports !== 'undefined') console.log(`  -> ${this.file()} exports: ${typeof module.exports}`);
-                    if (loglevel > 3) console.log(`  -> exports: ${module.exports}`);
+                    if (typeof this['module'].exports !== 'undefined') console.log(`  -> ${this.file()} exports: ${typeof this['module'].exports}`);
+                    if (loglevel > 3) console.log(`  -> exports: ${this['module'].exports}`);
                     console.log(`<<< ${this.file()} ran successfully`);
                 }
             }.bind(this))();
         }
 
         Module.prototype.executeCode = function() {
-            this.setStatus(ModuleStatus.PREPARING);
+            this.setStatus(ModuleStatus['PREPARING']);
             try {
                 if (loglevel > 1) console.log(`>>> Executing ${this.file()}`);
 
@@ -453,11 +462,11 @@ if (!window.require && window.document && !window._nodeJSCompat_) {
                 if (e.isInternalError) {
                     if (loglevel > 1) console.log(`<<< Aborted ${this.file()}, required ${this.needing().slice(-1)[0]}`);
                 }
-                this.setStatus(ModuleStatus.ABORTED);
+                this.setStatus(ModuleStatus['ABORTED']);
                 throw e;
             } finally {
             };
-            this.setStatus(ModuleStatus.SUCCESS);
+            this.setStatus(ModuleStatus['SUCCESS']);
         }
 
         Module.prototype.execute = function() {
@@ -481,28 +490,28 @@ if (!window.require && window.document && !window._nodeJSCompat_) {
         Module.prototype.onstatuschange = function() {
             if (loglevel > 2) console.error('Modules: ' + JSON.stringify(that.modules, null, '\t'));
             switch (this.status) {
-                case ModuleStatus.DOWNLOADING:
+                case ModuleStatus['DOWNLOADING']:
                     requestedRequired++;
                     break;
-                case ModuleStatus.PREPARING:
+                case ModuleStatus['PREPARING']:
                     runningScripts.push(this.file());
                     break;
-                case ModuleStatus.ABORTED:
+                case ModuleStatus['ABORTED']:
                     runningScripts.pop();
                     break;
-                case ModuleStatus.SUCCESS:
+                case ModuleStatus['SUCCESS']:
                     runningScripts.pop();
                     successfulRequired++;
-                    that.checkRunPendingScriptsNeeded();
+                    that['checkRunPendingScriptsNeeded']();
                     break;
             }
-            if (that.onmodulestatuschange) {
-                that.onmodulestatuschange(this);
+            if (that['onmodulestatuschange']) {
+                that['onmodulestatuschange'](this);
             }
         }
 
         Module.prototype.download =  function(forceDownload) {
-            this.setStatus(ModuleStatus.DOWNLOADING);
+            this.setStatus(ModuleStatus['DOWNLOADING']);
             var req = new XMLHttpRequest();
             req.module = this;
             req.onreadystatechange = function() {
@@ -510,16 +519,16 @@ if (!window.require && window.document && !window._nodeJSCompat_) {
                     var module = this.module;
                     if (req.status === 200) {
                         module.setSourceCode(this.responseText);
-                        module.setStatus(ModuleStatus.DOWNLOADED);
+                        module.setStatus(ModuleStatus['DOWNLOADED']);
                         module.execute();
                     } else {
-                        module.setStatus(ModuleStatus.DOWNLOADERROR);
+                        module.setStatus(ModuleStatus['DOWNLOADERROR']);
                         throw new URIError(module.src() + ' not accessible, status: ' + req.status + ', (required by ' + module.neededBys() + ')');
                     }
                 }
             };
             var src = this.src();
-            if (window._nodeJSCompat_.forceDownloads || forceDownload) {
+            if (window['_nodeJSCompat_']['forceDownloads'] || forceDownload) {
                 // Add some random to the source to trick browser cache
                 if (src.indexOf('?') > -1) {
                     src += '&' + Math.random();
@@ -535,7 +544,9 @@ if (!window.require && window.document && !window._nodeJSCompat_) {
             return `{file: ${this.file()}, status: ${statusStr[this.status]}}`;
         }
 
-    }();
+    };
 
-    window.require = window._nodeJSCompat_.require;
+    // To still work after Closure Compiler does its job
+    window['_nodeJSCompat_'] = new _NodeJSCompat_();
+    window['require'] = window['_nodeJSCompat_'].require;
 }
