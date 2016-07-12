@@ -1,0 +1,242 @@
+<html>
+    <head>
+        <meta charset="utf-8"/>
+        <style>
+            body  {font-family: Arial; background-color:lightgray; padding:0; margin:0; font-size:90%}
+            a {text-decoration: none}
+            a, a:visited {color:blue}
+            hr {margin-top: 2.5em;}
+            pre {background-color:lightgray; color:black; padding: .5em .5em .5em .5em; min-width: 400px}
+            .output {background-color:#EEE; color:darkred; min-height:1em}
+            .script {background-color:#EEE; color:black}
+            #maincontent {margin-left: auto; margin-right:auto; width: 700px; min-width: 700px; background-color:white; padding: 1em 3em 1em 3em; border:1px solid darkgray;}
+        </style>
+        <script>
+            // Code in this script is there for the demo page only. Don't pay attention to it
+            function showCode(name, text, keepID) {
+                var script = document.getElementById(name + '_script');
+                if (script.patched) {
+                    setTimeout(function(){showCode(name)}, 100);
+                    return;
+                }
+                var code = document.getElementById(name + '_code');
+                if (code && script) {
+                    var source = script.outerHTML;
+                    if (!keepID) {
+                        source = source.replace(/(<script).*?id="[^"]*"/, '$1');
+                    }
+                    // Remove source indentation
+                    var lines = source.split('\n');
+                    var spaces = lines[lines.length - 1].indexOf('</');
+                    source = lines.map(function(item){return item.replace(new RegExp(' {' + spaces + '}'), '');}).join('\n');
+
+                    // Replace < by &lt; and highlight comments
+                    source = source.replace(/</g, '&lt;').replace(/(\/\/.*)/g, '<font color="green">$1</font>');
+
+                    code.innerHTML = source;
+                    code.className = 'script';
+
+                    // Insert text before code
+                    if (text && text.length) {
+                        var span = document.createElement('SPAN');
+                        span.innerHTML = text;
+                        code.parentNode.insertBefore(span, code);
+                    }
+                }
+            }
+            function showOutput(result) {
+                var name = document.currentScript.id.replace(/_script/, '');
+                var output = document.getElementById(name);
+                if (output) {
+                    output.innerHTML = output.innerHTML + (output.innerHTML.length ? '<br>' : '') + result;
+                }
+            }
+            function showSourceCode(source, name, elements) {
+                for (var i=0, n = elements.length; i<n; i++) {
+                    var el = elements[i];
+                    el.innerHTML = source;
+                    if (name) {
+                        var span = document.createElement('SPAN');
+                        span.innerHTML = name + ':';
+                        el.parentNode.insertBefore(span, el);
+                    }
+                }
+            }
+        </script>
+
+
+        <!-- THIS IS WHERE IMPORTANT STUFF START -->
+
+        <script src="../../nodular_optimized.js"></script>
+        <!--<script src="../../nodular.js"></script>-->
+
+        <script id="initial_script">
+            // Start time will be useful at the end of the page
+            var startTime = new Date();
+
+            // Specify a path prefix on the server for our required scripts
+            _nodularJS_.pathPrefix = 'js/';
+
+            // We don't want required scripts to be loaded from the browser cache
+            // Might be removed in production
+            _nodularJS_.forceDownloads = true;
+
+            // We want to log to the console execution events
+            // Remove or change to 0 in production
+            _nodularJS_.loglevel = 2;
+
+            // We'll use that to show the source of downloaded JavaScript files
+            // This can be used for debug purposes
+            _nodularJS_.onmodulestatuschange = function(module) {
+                if (module.status == _nodularJS_.ModuleStatus.PREPARING) {
+                    var source = module.sourceCode();
+                    var pres = document.getElementsByClassName(module.file().replace(/^\.\//g, ''));
+                    showSourceCode(source, module.file(), pres);
+                }
+            }
+        </script>
+    </head>
+    <body>
+        <div id="maincontent">
+            <div style="text-align:center; line-height:.5em;">
+                <h2 style="margin-bottom:0em">nodular.js </h2>
+                <h3 style="padding-top:0em">
+                Attempt to reuse node.js code in a browser</h2>
+                <span id="version"></span><br><br><br>
+                Source code available on <a href="https://github.com/salathegroup/nodular.js">github.com/salathegroup/nodular.js</a>
+            </div>
+
+
+            <h3>Notice</h3>
+            <p>
+                nodular.js <b>works when served by a web server only</b>, because modern browsers won't allow
+                XMLHttpRequest to download a local file. This restriction is motivated by obvious security concerns.
+            </p>
+            <p style="display: none">
+                Here is a link open this page from one of our web servers: <a href="">Open from a web server</a>
+            </p>
+
+
+            <h3>Preparation</h3>
+            Download and run the compatibility code, that creates a global _nodularJS_ object:
+            <pre class="script">&lt;script src=&quot;../../nodular.js&quot;&gt;&lt;/script&gt;</pre>
+            Basic setup:<br>
+            <pre id="initial_code"></pre>
+            <hr>
+            <h3>"Module" without export</h3>
+            <pre class="lib/Array_extensions.js"></pre>
+            <pre id="test1_code"></pre>
+            <pre id="test1" class="output"></pre>
+
+            <script id="test1_script">
+                require('lib/Array_extensions.js');
+
+                showOutput([1, 2, 3].descriptiveText());
+            </script>
+
+
+            <hr>
+            <h3>Basic and a bit less basic exports</h3>
+            <pre class="Module_export_basic.js"></pre>
+            <pre class="Module_export_less_basic.js"></pre>
+            <pre id="test2_code"></pre>
+            <pre id="test2" class="output"></pre>
+
+            <script id="test2_script">
+                const basic_export = require('./Module_export_basic.js');
+                const less_basic_export = require('./Module_export_less_basic.js');
+
+                showOutput(basic_export);
+
+                showOutput(less_basic_export.capitalise(less_basic_export.string));
+            </script>
+
+
+            <hr>
+            <h3>Exported function</h3>
+            <pre class="Pet_source.js"></pre>
+            <pre id="test3_code"></pre>
+            <pre id="test3" class="output"></pre>
+
+            <script id="test3_script">
+                const Pet = require('./Pet_source.js');
+                var myPet = new Pet('Johnny');
+                showOutput(myPet.sayWhoYouAre());
+            </script>
+
+
+            <hr>
+            <h3>Multiple requires, re-requires, chained requires and more</h3>
+            <pre class="Pet_source.js"></pre>
+            <pre class="Dog_source.js"></pre>
+            <pre class="Pet_extensions.js"></pre>
+            <pre class="Dog_extensions.js"></pre>
+            <pre id="test4_code"></pre>
+            <pre id="test4" class="output"></pre>
+
+            <script id="test4_script">
+                // The code before "require" will be executed twice, since we have 2 requires...
+                showOutput('Code before require');
+
+                // ...so it's good practice to put all requires at the beginning of the script
+                // even if here we need Dog.bark() at the end of the script only
+                require('Dog_extensions.js');
+
+                // If we don't want to keep a reference to Dog, we can simply do
+                const dog_Brutus = new (require('./Dog_source.js'))('Brutus');
+
+                // Otherwise, let's do it like this
+                const Dog = require('./Dog_source.js');
+                const dog_Max = new Dog('Max');
+
+                showOutput(dog_Brutus.bark());
+                showOutput(dog_Max.bark());
+            </script>
+
+
+            <hr>
+            <h3>Wait until all requires have executed, then require a file that doesn't exist</h3>
+            The error will be clearly shown in the console:<br>
+            <span style="color:red; font-size:90%">Uncaught URIError: ./nosuchfile.js not accessible, status: 404, (required by ./Wrong.js ◀ ./RequireWrong.js ◀ test5_script)</span>.<br><br>
+            <pre class="RequireWrong.js"></pre>
+            <pre class="Wrong.js"></pre>
+            <pre id="test5_code"></pre>
+            <pre id="test5" class="output"></pre>
+
+            <script id="test5_script">
+                // Let's be sure all other scripts have executed,
+                // to avoid stopping them with the generated exception.
+                // require() "blocks" the script execution until all requires
+                // have executed.
+                require();
+
+                // Just to show the time it took to load & run all required files
+                var elapsed = new Date() - startTime;
+                showOutput('Time to execute up to the exception: '
+                           + elapsed + 'ms (would be faster without debug logs)');
+
+                // Require a file that will throw an exception
+                require('./RequireWrong.js');
+
+                // Because of the exception above, the rest of the script won't execute
+                showOutput("This won't show in the result box");
+            </script>
+
+
+            <script>
+                // Show library version
+                document.getElementById('version').innerHTML = _nodularJS_.version;
+
+                // Just to show the code of the scripts
+                showCode('initial');
+                var text = 'HTML source:';
+                showCode('test1', text);
+                showCode('test2', text);
+                showCode('test3', text);
+                showCode('test4', text);
+                showCode('test5', text, true);
+            </script>
+
+        </div>
+    </body>
+</html>
