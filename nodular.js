@@ -457,7 +457,7 @@ if (!window['require'] && window.document && !window['_nodularJS_']) {
         }
 
         Module.prototype.src = function() {
-            return `${window['_nodularJS_']['pathPrefix']}${this.file()}`;
+            return `${window['_nodularJS_']['pathPrefix']}${this.file()}`.replace(/\/\.\//g, '/');
         }
 
         Module.prototype.runWrappedCode = function() {
