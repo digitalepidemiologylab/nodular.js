@@ -426,7 +426,7 @@ if (!window['require'] && window.document && !window['_nodularJS_']) {
 
                 var requiredBys = requiredBy[requiredBy.length - 1];
                 var module = that.modules[moduleID(requiredBys)];
-                if (module) return module.file() + ' <- ' + module.requiredByChain();
+                if (module) return module.file() + ' ◀ ' + module.requiredByChain();
                 return scriptName(requiredBys);
             }
 
