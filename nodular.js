@@ -463,7 +463,7 @@ if (!window['require'] && window.document && !window['_nodularJS_']) {
 
         Module.prototype.runWrappedCode = function() {
             (function () {
-                this['module'] = {};
+                this['module'] = {'exports':{}};
                 var moduleStore = this['module'];
                 var error = true;
                 try {
