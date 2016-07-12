@@ -177,6 +177,19 @@ if (!window['require'] && window.document && !window['_nodeJSCompat_']) {
             s.patched       = true;
             s.id            = script.id;
 
+            for (key in that.modules) {
+                var module = that.modules[key];
+
+                var requiredBy = module.requiredBy(),
+                    n = requiredBy.length;
+                    for (var i=0; i<n; i++) {
+                        if (requiredBy[i] === script) {
+                            requiredBy[i] = s;
+                            break;
+                        }
+                    }
+            }
+
             return s;
         }
 
