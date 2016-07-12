@@ -31,14 +31,6 @@ if (!window['require'] && window.document && !window['_nodularJS_']) {
         // Settings
         const asynchronous     = false; // Should be accessible from outside?
 
-        // Log level:
-        // 0: no log
-        // 1: errors only
-        // 2: script execution
-        // 3: everything, but not the exports
-        // 4: everything
-        var loglevel           = 0;
-
         // Hash table, for fast script lookup
         var requires           = {};
 
@@ -84,6 +76,14 @@ if (!window['require'] && window.document && !window['_nodularJS_']) {
         const scriptAbortionMessage = "Aborting and defering script";
 
 
+
+        // Log level:
+        // 0: no log
+        // 1: errors only
+        // 2: script execution
+        // 3: everything, but not the exports
+        // 4: everything
+        this['loglevel']       = 0;
         // Used for debug logs only
         function scriptName(script) {
             if (script) {
@@ -219,19 +219,19 @@ if (!window['require'] && window.document && !window['_nodularJS_']) {
             var pendingLen = pendingScripts.length;
             if (pendingLen) {
                 /*
-                if (loglevel > 2) console.log('!!! Still pending: ' + pendingLen + ' script' + (pendingLen > 1 ? 's' : ''));
+                if (that['loglevel'] > 2) console.log('!!! Still pending: ' + pendingLen + ' script' + (pendingLen > 1 ? 's' : ''));
                 var scripts = [];
                 window['_nodularJS_'].pendingScripts.forEach(function(item) {
                     scripts.push(scriptName(item) + '(' + (item._requireIndex) + ')');
                 });
-                if (loglevel > 2) console.log('( ' + scripts.join(', ') + ' )');
+                if (that['loglevel'] > 2) console.log('( ' + scripts.join(', ') + ' )');
                 //*/
 
                 var script = pendingScripts.pop();
-                if (loglevel > 1) console.log('! Rerunning script ' + scriptName(script));
+                if (that['loglevel'] > 1) console.log('! Rerunning script ' + scriptName(script));
                 rescheduleScript(script);
             } else {
-                if (loglevel > 2) console.log('!!! No pending script');
+                if (that['loglevel'] > 2) console.log('!!! No pending script');
             }
         };
 
@@ -252,11 +252,11 @@ if (!window['require'] && window.document && !window['_nodularJS_']) {
                 throw new InternalError("Cancelling script");
             }
 
-            if (loglevel > 2) console.log('Adding ' + scriptName(currentScript) + ' to pending scripts (' + pendingScripts.length + ')');
+            if (that['loglevel'] > 2) console.log('Adding ' + scriptName(currentScript) + ' to pending scripts (' + pendingScripts.length + ')');
             var inserted = false;
             for (var i=0, len=pendingScripts.length; i<len; i++) {
                 var other = pendingScripts[i];
-                if (loglevel > 2) console.log(other._requireIndex);
+                if (that['loglevel'] > 2) console.log(other._requireIndex);
                 if (other._requireIndex < currentScript._requireIndex) {
                     pendingScripts.splice(i, 0, currentScript);
                     inserted = true;
@@ -283,9 +283,9 @@ if (!window['require'] && window.document && !window['_nodularJS_']) {
             script.parentNode.removeChild(script);
             script = copiedAndPatchedScript(script);
 
-            if (loglevel > 2) console.log('Adding ' + scriptName(script));
+            if (that['loglevel'] > 2) console.log('Adding ' + scriptName(script));
             document.body.appendChild(script);
-            if (loglevel > 2) console.log('Added  ' + scriptName(script));
+            if (that['loglevel'] > 2) console.log('Added  ' + scriptName(script));
         };
 
         function requireOneFile(info, currentScript, forceDownload) {
@@ -305,10 +305,10 @@ if (!window['require'] && window.document && !window['_nodularJS_']) {
 
         function requireAll() {
             if (requestedRequired != successfulRequired) {
-                if (loglevel > 2) console.log(`${requestedRequired} requested, ${successfulRequired} ready, deferring...`);
+                if (that['loglevel'] > 2) console.log(`${requestedRequired} requested, ${successfulRequired} ready, deferring...`);
                 tryDeferCurrentScript();
             }
-            if (loglevel > 2) console.log(`${requestedRequired} requested, ${successfulRequired} ready, moving on...`);
+            if (that['loglevel'] > 2) console.log(`${requestedRequired} requested, ${successfulRequired} ready, moving on...`);
         }
 
         var runningScriptsTimeout = null;
@@ -359,7 +359,7 @@ if (!window['require'] && window.document && !window['_nodularJS_']) {
             }
 
             if (!file || !file.length) {
-                if (loglevel > 2) console.log(scriptName(currentScript) + ' required ALL');
+                if (that['loglevel'] > 2) console.log(scriptName(currentScript) + ' required ALL');
                 requireAll();
                 return;
             }
@@ -378,7 +378,7 @@ if (!window['require'] && window.document && !window['_nodularJS_']) {
             }
 
             file = sanitizedPath(file);
-            if (loglevel > 2) console.log(scriptName(currentScript) + ' required ' + file);
+            if (that['loglevel'] > 2) console.log(scriptName(currentScript) + ' required ' + file);
 
             var requestingModuleID = moduleID(scriptName(currentScript));
 
@@ -389,16 +389,16 @@ if (!window['require'] && window.document && !window['_nodularJS_']) {
 
             var info = insertionInfo(file);
             if (info.index == -1) {
-                if (loglevel > 2) console.log('Never heard of ' + file + ' (currently in ' + scriptName(currentScript) + ')');
+                if (that['loglevel'] > 2) console.log('Never heard of ' + file + ' (currently in ' + scriptName(currentScript) + ')');
                 requireOneFile(info, currentScript, forceDownload);
             } else {
                 var module = that.modules[moduleID(file)];
                 if (module && module.status >= ModuleStatus['SUCCESS']) {
-                    if (loglevel > 2) console.log('Already run successfully: ' + file);
+                    if (that['loglevel'] > 2) console.log('Already run successfully: ' + file);
                     module.addRequiredBy(currentScript);
                     return module.exports;
                 } else {
-                    if (loglevel > 2) console.log('Still not run successfully: ' + file);
+                    if (that['loglevel'] > 2) console.log('Still not run successfully: ' + file);
                     tryDeferCurrentScript();
                 }
             }
@@ -468,9 +468,9 @@ if (!window['require'] && window.document && !window['_nodularJS_']) {
                     this.exports = this['module']['exports'];
                 } finally {}
                 if (this['module'] !== moduleStore) throw "Error: module was replaced in required file ${this.file()}";
-                if (loglevel > 1) {
+                if (that['loglevel'] > 1) {
                     if (typeof this['module'].exports !== 'undefined') console.log(`  -> ${this.file()} exports: ${typeof this['module'].exports}`);
-                    if (loglevel > 3) console.log(`  -> exports: ${this['module'].exports}`);
+                    if (that['loglevel'] > 3) console.log(`  -> exports: ${this['module'].exports}`);
                     console.log(`<<< ${this.file()} ran successfully`);
                 }
             }.bind(this))();
@@ -479,13 +479,13 @@ if (!window['require'] && window.document && !window['_nodularJS_']) {
         Module.prototype.executeCode = function() {
             this.setStatus(ModuleStatus['PREPARING']);
             try {
-                if (loglevel > 1) console.log(`>>> Executing ${this.file()}`);
+                if (that['loglevel'] > 1) console.log(`>>> Executing ${this.file()}`);
 
                 this.runWrappedCode();
 
             } catch(e) {
                 if (e.isInternalError) {
-                    if (loglevel > 1) console.log(`<<< Aborted ${this.file()}, required ${this.requiring().slice(-1)[0]}`);
+                    if (that['loglevel'] > 1) console.log(`<<< Aborted ${this.file()}, required ${this.requiring().slice(-1)[0]}`);
                 }
                 this.setStatus(ModuleStatus['ABORTED']);
                 throw e;
@@ -513,7 +513,7 @@ if (!window['require'] && window.document && !window['_nodularJS_']) {
 
 
         Module.prototype.onstatuschange = function() {
-            if (loglevel > 2) console.error('Modules: ' + JSON.stringify(that.modules, null, '\t'));
+            if (that['loglevel'] > 2) console.error('Modules: ' + JSON.stringify(that.modules, null, '\t'));
             switch (this.status) {
                 case ModuleStatus['DOWNLOADING']:
                     requestedRequired++;
