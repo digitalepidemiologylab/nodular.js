@@ -183,7 +183,7 @@ if (!window['require'] && window.document && !window['_nodeJSCompat_']) {
         this['cleanScript'] = function() {
             var script = document.currentScript;
             script.innerHTML = script.innerHTML.replace(new RegExp(endMagicString + '[\\s\\S]*$'), '').replace(new RegExp('^[\\s\\S]*' + beginMagicString), '');
-            script.patched = null;
+            delete script.patched;
         }
 
         function checkRunPendingScripts() {
