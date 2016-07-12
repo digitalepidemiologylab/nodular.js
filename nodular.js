@@ -1,9 +1,9 @@
-if (!window['require'] && window.document && !window['_nodeJSCompat_']) {
+if (!window['require'] && window.document && !window['_nodularJS_']) {
 
     /**
      * @constructor
      */
-    function _NodeJSCompat_() {
+    function _NodularJS_() {
 
         const that = this;
 
@@ -221,7 +221,7 @@ if (!window['require'] && window.document && !window['_nodeJSCompat_']) {
                 /*
                 if (loglevel > 2) console.log('!!! Still pending: ' + pendingLen + ' script' + (pendingLen > 1 ? 's' : ''));
                 var scripts = [];
-                window['_nodeJSCompat_'].pendingScripts.forEach(function(item) {
+                window['_nodularJS_'].pendingScripts.forEach(function(item) {
                     scripts.push(scriptName(item) + '(' + (item._requireIndex) + ')');
                 });
                 if (loglevel > 2) console.log('( ' + scripts.join(', ') + ' )');
@@ -454,7 +454,7 @@ if (!window['require'] && window.document && !window['_nodeJSCompat_']) {
         }
 
         Module.prototype.src = function() {
-            return `${window['_nodeJSCompat_']['pathPrefix']}${this.file()}`;
+            return `${window['_nodularJS_']['pathPrefix']}${this.file()}`;
         }
 
         Module.prototype.runWrappedCode = function() {
@@ -572,6 +572,6 @@ if (!window['require'] && window.document && !window['_nodeJSCompat_']) {
     };
 
     // To still work after Closure Compiler does its job
-    window['_nodeJSCompat_'] = new _NodeJSCompat_();
-    window['require'] = window['_nodeJSCompat_'].require;
+    window['_nodularJS_'] = new _NodularJS_();
+    window['require'] = window['_nodularJS_'].require;
 }
