@@ -300,6 +300,7 @@ if (!window['require'] && window.document && !window['_nodularJS_']) {
             module.download(forceDownload);
 
             if (document.currentScript) {
+                if (that['loglevel'] > 1) console.log('! Deferring '+ scriptName(currentScript) + ' (requires ' + info.file + ')');
                 tryDeferCurrentScript();
             } else {
                 throw new InternalError(`${info.file} was required in an anonymous script`);
