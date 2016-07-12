@@ -212,32 +212,85 @@ if (!window['require'] && window.document && !window['_nodularJS_']) {
             delete script.patched;
         }
 
+        function scriptCanExecute(script) {
+            if (!script) console.error('NO SCRIPT!!');
+            var modules;
+            if (script.requiresAll) {
+                modules = [];
+                for (var key in that.modules) {
+                    modules.push(that.modules[key]);
+                }
+            } else {
+                modules = script.requiredModules;
+            }
+            if (modules && modules.length) {
+                for (var j=0, n=modules.length; j<n; j++) {
+                    var module = modules[j];
+                    if (module.status < ModuleStatus['SUCCESS']) {
+                        return false;
+                    }
+                }
+            }
+            return true;
+        }
+
+        function moduleCanExecute(module) {
+            var requiring = module.requiring();
+            for (var i=0, n=requiring.length; i<n; i++) {
+                var required = requiring[i];
+                var mod = that.modules[moduleID(required)];
+                if (mod.status < ModuleStatus['SUCCESS']) {
+                    return false;
+                }
+            }
+            return true;
+        }
+
         function checkRunPendingScripts() {
             cancelRunningScriptsTimeout();
 
             // If any, execute downloaded source and return
             if (pendingModules.length) {
-                var module = pendingModules.pop();
-                module.execute();
-                return;
+                for(;;) {
+                    var module = null;
+                    var pendingLen = pendingModules.length;
+                    for (var i=0; i<pendingLen; i++) {
+                        var testedModule = pendingModules[i];
+                        if (moduleCanExecute(testedModule)) {
+                            pendingModules.splice(i, 1);
+                            module = testedModule;
+                            break;
+                        }
+                    }
+                    if (module) {
+                        if (that['loglevel'] > 1) console.log('! Rerunning module ' + module.file());
+                        module.execute();
+                        return;
+                    } else {
+                        break;
+                    }
+                }
             }
 
-            var pendingLen = pendingScripts.length;
-            if (pendingLen) {
-                /*
-                if (that['loglevel'] > 2) console.log('!!! Still pending: ' + pendingLen + ' script' + (pendingLen > 1 ? 's' : ''));
-                var scripts = [];
-                window['_nodularJS_'].pendingScripts.forEach(function(item) {
-                    scripts.push(scriptName(item) + '(' + (item._requireIndex) + ')');
-                });
-                if (that['loglevel'] > 2) console.log('( ' + scripts.join(', ') + ' )');
-                //*/
-
-                var script = pendingScripts.pop();
-                if (that['loglevel'] > 1) console.log('! Rerunning script ' + scriptName(script));
-                rescheduleScript(script);
-            } else {
-                if (that['loglevel'] > 2) console.log('!!! No pending script');
+            if (pendingScripts.length) {
+                for(;;) {
+                    var script = null;
+                    var pendingLen = pendingScripts.length;
+                    for (var i=0; i<pendingLen; i++) {
+                        var testedScript = pendingScripts[i];
+                        if (scriptCanExecute(testedScript)) {
+                            pendingScripts.splice(i, 1);
+                            script = testedScript;
+                            break;
+                        }
+                    }
+                    if (script) {
+                        if (that['loglevel'] > 1) console.log('! Rerunning script ' + scriptName(script));
+                        rescheduleScript(script);
+                    } else {
+                        break;
+                    }
+                }
             }
         };
 
@@ -261,11 +314,12 @@ if (!window['require'] && window.document && !window['_nodularJS_']) {
             if (that['loglevel'] > 1) console.warn('! Deferring '+ scriptName(currentScript) + ' (requires ' + (info ? info.file : 'all files') + ')');
 
             if (that['loglevel'] > 2) console.log('Adding ' + scriptName(currentScript) + ' to pending scripts (' + pendingScripts.length + ')');
+
             var inserted = false;
             for (var i=0, len=pendingScripts.length; i<len; i++) {
                 var other = pendingScripts[i];
                 if (that['loglevel'] > 2) console.log(other._requireIndex);
-                if (other._requireIndex < currentScript._requireIndex) {
+                if (other._requireIndex > currentScript._requireIndex) {
                     pendingScripts.splice(i, 0, currentScript);
                     inserted = true;
                     break;
@@ -305,6 +359,8 @@ if (!window['require'] && window.document && !window['_nodularJS_']) {
             module.download(forceDownload);
 
             if (document.currentScript) {
+                document.currentScript.requiredModules = document.currentScript.requiredModules || [];
+                document.currentScript.requiredModules.push(module);
                 tryDeferCurrentScript(info);
             } else {
                 throw new InternalError(`${info.file} was required in an anonymous script`);
@@ -368,6 +424,9 @@ if (!window['require'] && window.document && !window['_nodularJS_']) {
 
             if (!file || !file.length) {
                 if (that['loglevel'] > 2) console.log(scriptName(currentScript) + ' required ALL');
+                if (document.currentScript) {
+                    document.currentScript.requiresAll = true;
+                }
                 requireAll();
                 return;
             }
