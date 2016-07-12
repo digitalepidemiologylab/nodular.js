@@ -410,6 +410,9 @@ if (!window['require'] && window.document && !window['_nodeJSCompat_']) {
             }
 
             this.addRequiredBy = function(by) {
+                for (var i=0, n=requiredBy.length; i<n; i++) {
+                    if (requiredBy[i] === by) return;
+                }
                 requiredBy.push(by);
             }
 
