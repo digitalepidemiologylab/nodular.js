@@ -7,6 +7,13 @@ if (!window['require'] && window.document && !window['_nodeJSCompat_']) {
 
         const that = this;
 
+        Object.defineProperty(this, 'version', {
+            enumerable: true,
+            configurable: false,
+            writable: false,
+            value: '0.9 beta'
+        });
+
         ////////////////
         // Public
 
