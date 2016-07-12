@@ -14,16 +14,6 @@ if (!window['require'] && window.document && !window['_nodularJS_']) {
             value: '0.9 beta'
         });
 
-        ////////////////
-        // Public
-
-        // Settings
-        this['pathPrefix']     = '';
-        this['forceDownloads'] = false;
-
-        // Modules must have a global scope for reuse by other scripts
-        this.modules           = {};
-
 
         ////////////////
         // Private
@@ -62,8 +52,6 @@ if (!window['require'] && window.document && !window['_nodularJS_']) {
             'SUCCESS':       c++
         }
 
-        this['ModuleStatus'] = ModuleStatus;
-
         statusStr = {};
         statusStr[ModuleStatus['NONE']]          = 'None';
         statusStr[ModuleStatus['DOWNLOADING']]   = 'Downloading';
@@ -76,6 +64,13 @@ if (!window['require'] && window.document && !window['_nodularJS_']) {
         const scriptAbortionMessage = "Aborting and defering script";
 
 
+        ////////////////
+        // Public
+
+        ////////////////
+        // Settings
+        this['pathPrefix']     = '';
+        this['forceDownloads'] = false;
 
         // Log level:
         // 0: no log
@@ -84,6 +79,14 @@ if (!window['require'] && window.document && !window['_nodularJS_']) {
         // 3: everything, but not the exports
         // 4: everything
         this['loglevel']       = 0;
+
+        this['ModuleStatus'] = ModuleStatus;
+
+        // Modules must have a global scope for reuse by other scripts
+        this.modules           = {};
+
+
+
         // Used for debug logs only
         function scriptName(script) {
             if (script) {
