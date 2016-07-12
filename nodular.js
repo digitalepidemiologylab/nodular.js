@@ -249,7 +249,7 @@ if (!window['require'] && window.document && !window['_nodularJS_']) {
             this.isInternalError = true;
         }
 
-        function tryDeferCurrentScript() {
+        function tryDeferCurrentScript(info) {
             // document.currentScript can be null if called from timeout, for instance
             var currentScript = document.currentScript;
 
@@ -305,7 +305,7 @@ if (!window['require'] && window.document && !window['_nodularJS_']) {
             module.download(forceDownload);
 
             if (document.currentScript) {
-                tryDeferCurrentScript();
+                tryDeferCurrentScript(info);
             } else {
                 throw new InternalError(`${info.file} was required in an anonymous script`);
             }
@@ -407,7 +407,7 @@ if (!window['require'] && window.document && !window['_nodularJS_']) {
                     return module.exports;
                 } else {
                     if (that['loglevel'] > 2) console.log('Still not run successfully: ' + file);
-                    tryDeferCurrentScript();
+                    tryDeferCurrentScript(info);
                 }
             }
         }
