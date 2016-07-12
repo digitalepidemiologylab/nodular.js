@@ -375,6 +375,7 @@ if (!window['require'] && window.document && !window['_nodeJSCompat_']) {
                 var module = that.modules[moduleID(file)];
                 if (module && module.status >= ModuleStatus['SUCCESS']) {
                     if (loglevel > 2) console.log('Already run successfully: ' + file);
+                    module.addRequiredBy(currentScript);
                     return module.exports;
                 } else {
                     if (loglevel > 2) console.log('Still not run successfully: ' + file);
