@@ -553,7 +553,7 @@ if (!window['require'] && window.document && !window['_nodeJSCompat_']) {
                 }
             };
             var src = this.src();
-            if (window['_nodeJSCompat_']['forceDownloads'] || forceDownload) {
+            if (that['forceDownloads'] || forceDownload) {
                 // Add some random to the source to trick browser cache
                 if (src.indexOf('?') > -1) {
                     src += '&' + Math.random();
