@@ -82,6 +82,9 @@ if (!window['require'] && window.document && !window['_nodularJS_']) {
 
         this['ModuleStatus'] = ModuleStatus;
 
+        // This can be used to simulate randomise download reception
+        this['downloadWithRandomDeferTime'] = false;
+
         // Modules must have a global scope for reuse by other scripts
         this.modules           = {};
 
@@ -566,7 +569,13 @@ if (!window['require'] && window.document && !window['_nodularJS_']) {
                 }
             }
             req.open("GET", src, true);
-            req.send(null);
+            if (that['downloadWithRandomDeferTime']) {
+                setTimeout(function(){
+                    req.send(null);
+                }, 2000 * Math.random());
+            } else {
+                req.send(null);
+            }
         }
 
         Module.prototype.toJSON = function(a, b, c) {
