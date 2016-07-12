@@ -185,7 +185,7 @@ if (!window['require'] && window.document && !window['_nodularJS_']) {
                             + beginMagicString
                             + script.innerHTML
                             + endMagicString
-                            + `\n\n}catch(e){__error__=true;throw e}finally{if (!__error__)window._nodularJS_.checkRunPendingScriptsNeeded();window._nodularJS_.cleanScript();}`;
+                            + `\n\n}catch(e){__error__=true;throw e}finally{if (!__error__)window._nodularJS_.checkRunPendingCodeNeeded();window._nodularJS_.cleanScript();}`;
             }
             s.patched       = true;
             s.id            = script.id;
@@ -246,7 +246,7 @@ if (!window['require'] && window.document && !window['_nodularJS_']) {
             return true;
         }
 
-        function checkRunPendingScripts() {
+        function checkRunPendingCode() {
             cancelRunningScriptsTimeout();
 
             // If any, execute downloaded source and return
@@ -387,16 +387,16 @@ if (!window['require'] && window.document && !window['_nodularJS_']) {
         /////////////////////
         // Public functions
 
-        // checkRunPendingScriptsNeeded needs to be accessible from the script
-        this['checkRunPendingScriptsNeeded'] = function() {
+        // checkRunPendingCodeNeeded needs to be accessible from the script
+        this['checkRunPendingCodeNeeded'] = function() {
             if (asynchronous) {
                 if (!runningScriptsTimeout) {
                     runningScriptsTimeout = setTimeout(function() {
-                        checkRunPendingScripts();
+                        checkRunPendingCode();
                     }, 0);
                 }
             } else {
-                checkRunPendingScripts();
+                checkRunPendingCode();
             }
         };
 
@@ -596,7 +596,7 @@ if (!window['require'] && window.document && !window['_nodularJS_']) {
                 case ModuleStatus['SUCCESS']:
                     runningScripts.pop();
                     successfulRequired++;
-                    that['checkRunPendingScriptsNeeded']();
+                    that['checkRunPendingCodeNeeded']();
                     break;
             }
             if (that['onmodulestatuschange']) {
