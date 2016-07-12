@@ -370,7 +370,7 @@ if (!window['require'] && window.document && !window['_nodularJS_']) {
         function requireAll() {
             if (requestedRequired != successfulRequired) {
                 if (that['loglevel'] > 2) console.log(`${requestedRequired} requested, ${successfulRequired} ready, deferring...`);
-                tryDeferCurrentScript();
+                tryDeferCurrentScript(null);
             }
             if (that['loglevel'] > 2) console.log(`${requestedRequired} requested, ${successfulRequired} ready, moving on...`);
         }
