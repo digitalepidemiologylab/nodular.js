@@ -505,6 +505,9 @@ if (!window['require'] && window.document && !window['_nodularJS_']) {
             }
 
             this.addRequiring = function(by) {
+                for (var i=0, n=requiring.length; i<n; i++) {
+                    if (requiring[i] === by) return;
+                }
                 requiring.push(by);
             }
 
