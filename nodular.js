@@ -258,6 +258,8 @@ if (!window['require'] && window.document && !window['_nodularJS_']) {
                 throw new InternalError("Cancelling script");
             }
 
+            if (that['loglevel'] > 1) console.warn('! Deferring '+ scriptName(currentScript) + ' (requires ' + (info ? info.file : 'all files') + ')');
+
             if (that['loglevel'] > 2) console.log('Adding ' + scriptName(currentScript) + ' to pending scripts (' + pendingScripts.length + ')');
             var inserted = false;
             for (var i=0, len=pendingScripts.length; i<len; i++) {
@@ -303,7 +305,6 @@ if (!window['require'] && window.document && !window['_nodularJS_']) {
             module.download(forceDownload);
 
             if (document.currentScript) {
-                if (that['loglevel'] > 1) console.log('! Deferring '+ scriptName(currentScript) + ' (requires ' + info.file + ')');
                 tryDeferCurrentScript();
             } else {
                 throw new InternalError(`${info.file} was required in an anonymous script`);
@@ -478,7 +479,6 @@ if (!window['require'] && window.document && !window['_nodularJS_']) {
                 if (that['loglevel'] > 1) {
                     if (typeof this['module'].exports !== 'undefined') console.log(`  -> ${this.file()} exports: ${typeof this['module'].exports}`);
                     if (that['loglevel'] > 3) console.log(`  -> exports: ${this['module'].exports}`);
-                    console.log(`<<< ${this.file()} ran successfully`);
                 }
             }.bind(this))();
         }
@@ -492,7 +492,7 @@ if (!window['require'] && window.document && !window['_nodularJS_']) {
 
             } catch(e) {
                 if (e.isInternalError) {
-                    if (that['loglevel'] > 1) console.log(`<<< Aborted ${this.file()}, required ${this.requiring().slice(-1)[0]}`);
+                    if (that['loglevel'] > 1) console.warn(`<<< Aborted ${this.file()} (requires ${this.requiring().slice(-1)[0]})`);
                 }
                 this.setStatus(ModuleStatus['ABORTED']);
                 throw e;
@@ -552,6 +552,7 @@ if (!window['require'] && window.document && !window['_nodularJS_']) {
                     if (req.status === 200) {
                         module.setSourceCode(this.responseText);
                         module.setStatus(ModuleStatus['DOWNLOADED']);
+                        if (that['loglevel'] > 1) console.log('Received ' + req.module.file());
                         module.execute();
                     } else {
                         module.setStatus(ModuleStatus['DOWNLOADERROR']);
