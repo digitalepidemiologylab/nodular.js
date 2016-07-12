@@ -272,7 +272,7 @@ if (!window['require'] && window.document && !window['_nodeJSCompat_']) {
             requires[info.key].push(info.file);
 
             var module = new Module(info.file);
-            module.addNeededBy(currentScript);
+            module.addRequiredBy(currentScript);
             that.modules[module.ID()] = module;
             module.download(forceDownload);
 
@@ -364,7 +364,7 @@ if (!window['require'] && window.document && !window['_nodeJSCompat_']) {
 
             var requestingModule = that.modules[requestingModuleID];
             if (requestingModule) {
-                requestingModule.addNeeding(file);
+                requestingModule.addRequiring(file);
             }
 
             var info = insertionInfo(file);
@@ -387,33 +387,34 @@ if (!window['require'] && window.document && !window['_nodeJSCompat_']) {
          * @constructor
          */
         function Module(file) {
-            var neededBy = [];
+            var requiredBy = [];
             var sourceCode = null;
             var ID = moduleID(file);
-            var needing = [];
+            var requiring = [];
 
             this.status = ModuleStatus['NONE'];
 
             this.ID   = function() { return ID;   }
             this.file = function() { return file; }
-            this.neededBy   = function() { return neededBy;   }
-            this.needing    = function() { return needing;    }
+            this.requiredBy    = function() { return requiredBy;   }
+            this.requiring     = function() { return requiring;    }
             this['sourceCode'] = function() { return sourceCode; }
 
-            this.neededBys = function() {
-                if (neededBy.length == 0) return '';
+            this.requiredByChain = function() {
+                if (requiredBy.length == 0) return '';
 
-                var neededBys = neededBy[neededBy.length - 1];
-                var module = that.modules[moduleID(neededBys)];
-                if (module) return module.file() + ' <- ' + module.neededBys();
-                return scriptName(neededBys);
-            }
-            this.addNeededBy = function(by) {
-                neededBy.push(by);
+                var requiredBys = requiredBy[requiredBy.length - 1];
+                var module = that.modules[moduleID(requiredBys)];
+                if (module) return module.file() + ' <- ' + module.requiredByChain();
+                return scriptName(requiredBys);
             }
 
-            this.addNeeding = function(by) {
-                needing.push(by);
+            this.addRequiredBy = function(by) {
+                requiredBy.push(by);
+            }
+
+            this.addRequiring = function(by) {
+                requiring.push(by);
             }
 
             this.setSourceCode = function(code) {
@@ -460,7 +461,7 @@ if (!window['require'] && window.document && !window['_nodeJSCompat_']) {
 
             } catch(e) {
                 if (e.isInternalError) {
-                    if (loglevel > 1) console.log(`<<< Aborted ${this.file()}, required ${this.needing().slice(-1)[0]}`);
+                    if (loglevel > 1) console.log(`<<< Aborted ${this.file()}, required ${this.requiring().slice(-1)[0]}`);
                 }
                 this.setStatus(ModuleStatus['ABORTED']);
                 throw e;
@@ -523,7 +524,7 @@ if (!window['require'] && window.document && !window['_nodeJSCompat_']) {
                         module.execute();
                     } else {
                         module.setStatus(ModuleStatus['DOWNLOADERROR']);
-                        throw new URIError(module.src() + ' not accessible, status: ' + req.status + ', (required by ' + module.neededBys() + ')');
+                        throw new URIError(module.src() + ' not accessible, status: ' + req.status + ', (required by ' + module.requiredByChain() + ')');
                     }
                 }
             };
