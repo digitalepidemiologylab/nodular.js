@@ -179,7 +179,7 @@ if (!window['require'] && window.document && !window['_nodeJSCompat_']) {
                             + beginMagicString
                             + script.innerHTML
                             + endMagicString
-                            + `\n\n}catch(e){__error__=true;if (false&&e && e.message && e.message!='${scriptAbortionMessage}')console.error(e.message);throw e}finally{if (!__error__)window._nodeJSCompat_.checkRunPendingScriptsNeeded();window._nodeJSCompat_.cleanScript();}`;
+                            + `\n\n}catch(e){__error__=true;throw e}finally{if (!__error__)window._nodularJS_.checkRunPendingScriptsNeeded();window._nodularJS_.cleanScript();}`;
             }
             s.patched       = true;
             s.id            = script.id;
