@@ -4,7 +4,7 @@
 
 ### Live test
 If you want to test the code, these examples are available on  
-http://nodular.js.s3-website-eu-west-1.amazonaws.com/examples/
+https://salathegroup.github.io/nodular.js/examples/
 
 ### Notice
 
