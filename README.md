@@ -8,7 +8,7 @@ http://nodular.js.s3-website-eu-west-1.amazonaws.com/examples/
 
 ### Notice
 
-nodular.js works when served by a web server only, because modern browsers won't allow XMLHttpRequest to download a local file. This restriction is motivated by obvious security concerns.
+nodular.js **works when served by a web server only**, because modern browsers won't allow XMLHttpRequest to download a local file. This restriction is motivated by obvious security concerns.
 
 
 ### Preparation
@@ -241,7 +241,8 @@ HTML source:
     // Just to show the time it took to load & run all required files
     var elapsed = new Date() - startTime;
     showOutput('Time to execute up to the exception: '
-               + elapsed + 'ms (would be faster without debug logs)');
+               + elapsed + 'ms ');
+    showOutput('(could be faster without debug logs)');
 
     // Require a file that will throw an exception
     require('./RequireWrong.js');
@@ -252,5 +253,6 @@ HTML source:
 ```
 Output:
 ```
-Time to execute up to the exception: 278ms (would be faster without debug logs)
+Time to execute up to the exception: 193ms
+(could be faster without debug logs)
 ```
