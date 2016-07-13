@@ -15,7 +15,7 @@ nodular.js **works when served by a web server only**, because modern browsers w
 
 Download and run the compatibility code, that creates a global `_nodularJS_` object:
 ```html
-<script src="../../nodular.js"></script>
+<script src="https://salathegroup.github.io/nodular.js/nodular.js"></script>
 ```
 Basic setup:
 ```html
