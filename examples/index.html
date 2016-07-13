@@ -112,8 +112,8 @@
                 nodular.js <b>works when served by a web server only</b>, because modern browsers won't allow
                 XMLHttpRequest to download a local file. This restriction is motivated by obvious security concerns.
             </p>
-            <p style="display: none">
-                Here is a link open this page from one of our web servers: <a href="">Open from a web server</a>
+            <p>
+                Here is a link open this page from one of our web servers: <a href="http://nodular.js.s3-website-eu-west-1.amazonaws.com/examples/">Open from a web server</a>
             </p>
 
 
@@ -213,7 +213,8 @@
                 // Just to show the time it took to load & run all required files
                 var elapsed = new Date() - startTime;
                 showOutput('Time to execute up to the exception: '
-                           + elapsed + 'ms (would be faster without debug logs)');
+                           + elapsed + 'ms ');
+                showOutput('(would be faster without debug logs)');
 
                 // Require a file that will throw an exception
                 require('./RequireWrong.js');
