@@ -202,16 +202,17 @@ if (!window['require'] && window.document && !window['_nodularJS_']) {
             return s;
         }
 
+        const beginRegExp = new RegExp('^[\\s\\S]*' + beginMagicString);
+        const endRegExp   = new RegExp(endMagicString + '[\\s\\S]*$');
         this['cleanScript'] = function() {
             var script = document.currentScript;
-            script.innerHTML = script.innerHTML.replace(new RegExp(endMagicString + '[\\s\\S]*$'), '').replace(new RegExp('^[\\s\\S]*' + beginMagicString), '');
+            script.innerHTML = script.innerHTML.replace(endRegExp, '').replace(beginRegExp, '');
             delete script.patched;
         }
 
         // A script can execute if all its known required modules have been
         // successfully executed
         function scriptCanExecute(script) {
-            if (!script) console.error('NO SCRIPT!!');
             var modules;
             if (script.requiresAll) {
                 modules = [];
