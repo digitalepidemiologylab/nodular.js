@@ -3,7 +3,7 @@
 ## Attempt to reuse node.js code in a browser
 
 ### Live test
-If you want to test the code, these examples are available on  
+If you want to test the code, these examples are available on
 https://salathegroup.github.io/nodular.js/examples/
 
 ### Notice
