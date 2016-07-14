@@ -187,7 +187,7 @@ Dog.prototype.bark = Dog.prototype.shoutWhoYouAre;
 HTML source:
 ```html
 <script>
-    // The code before "require" will be executed twice, since we have 2 requires...
+    // The code before "require" might be executed twice, since we have 2 requires...
     showOutput('Code before require');
 
     // ...so it's good practice to put all requires at the beginning of the script
