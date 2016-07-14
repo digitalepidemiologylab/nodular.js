@@ -52,14 +52,13 @@ if (!window['require'] && window.document && !window['_nodularJS_']) {
             'SUCCESS':       c++
         }
 
-        statusStr = {};
-        statusStr[ModuleStatus['NONE']]          = 'None';
-        statusStr[ModuleStatus['DOWNLOADING']]   = 'Downloading';
-        statusStr[ModuleStatus['DOWNLOADED']]    = 'Downloaded';
-        statusStr[ModuleStatus['DOWNLOADERROR']] = 'Download error';
-        statusStr[ModuleStatus['PREPARING']]     = 'Preparing';
-        statusStr[ModuleStatus['ABORTED']]       = 'Aborted';
-        statusStr[ModuleStatus['SUCCESS']]       = 'Success';
+        const ModuleStatusNONE          = ModuleStatus['NONE'];
+        const ModuleStatusDOWNLOADING   = ModuleStatus['DOWNLOADING'];
+        const ModuleStatusDOWNLOADED    = ModuleStatus['DOWNLOADED'];
+        const ModuleStatusDOWNLOADERROR = ModuleStatus['DOWNLOADERROR'];
+        const ModuleStatusPREPARING     = ModuleStatus['PREPARING'];
+        const ModuleStatusABORTED       = ModuleStatus['ABORTED'];
+        const ModuleStatusSUCCESS       = ModuleStatus['SUCCESS'];
 
         const scriptAbortionMessage = "Aborting and defering script";
 
@@ -228,7 +227,7 @@ if (!window['require'] && window.document && !window['_nodularJS_']) {
             if (modules && modules.length) {
                 for (var j=0, n=modules.length; j<n; j++) {
                     var module = modules[j];
-                    if (module.status < ModuleStatus['SUCCESS']) {
+                    if (module.status < ModuleStatusSUCCESS) {
                         return false;
                     }
                 }
@@ -243,7 +242,7 @@ if (!window['require'] && window.document && !window['_nodularJS_']) {
             for (var i=0, n=requiring.length; i<n; i++) {
                 var required = requiring[i];
                 var mod = that.modules[moduleID(required)];
-                if (mod.status < ModuleStatus['SUCCESS']) {
+                if (mod.status < ModuleStatusSUCCESS) {
                     return false;
                 }
             }
@@ -464,7 +463,7 @@ if (!window['require'] && window.document && !window['_nodularJS_']) {
                 requireOneFile(info, currentScript, forceDownload);
             } else {
                 var module = that.modules[moduleID(file)];
-                if (module && module.status >= ModuleStatus['SUCCESS']) {
+                if (module && module.status >= ModuleStatusSUCCESS) {
                     if (that['loglevel'] > 2) console.log('Already run successfully: ' + file);
                     module.addRequiredBy(currentScript);
                     return module.exports;
@@ -484,7 +483,7 @@ if (!window['require'] && window.document && !window['_nodularJS_']) {
             var ID = moduleID(file);
             var requiring = [];
 
-            this.status = ModuleStatus['NONE'];
+            this.status = ModuleStatusNONE;
 
             this.ID   = function() { return ID;   }
             this.file = function() { return file; }
@@ -550,7 +549,7 @@ if (!window['require'] && window.document && !window['_nodularJS_']) {
         }
 
         Module.prototype.executeCode = function() {
-            this.setStatus(ModuleStatus['PREPARING']);
+            this.setStatus(ModuleStatusPREPARING);
             try {
                 if (that['loglevel'] > 1) console.log(`>>> Executing ${this.file()}`);
 
@@ -560,11 +559,11 @@ if (!window['require'] && window.document && !window['_nodularJS_']) {
                 if (e.isInternalError) {
                     if (that['loglevel'] > 1) console.warn(`<<< Aborted ${this.file()} (requires ${this.requiring().slice(-1)[0]})`);
                 }
-                this.setStatus(ModuleStatus['ABORTED']);
+                this.setStatus(ModuleStatusABORTED);
                 throw e;
             } finally {
             };
-            this.setStatus(ModuleStatus['SUCCESS']);
+            this.setStatus(ModuleStatusSUCCESS);
         }
 
         Module.prototype.execute = function() {
@@ -588,16 +587,16 @@ if (!window['require'] && window.document && !window['_nodularJS_']) {
         Module.prototype.onstatuschange = function() {
             if (that['loglevel'] > 2) console.error('Modules: ' + JSON.stringify(that.modules, null, '\t'));
             switch (this.status) {
-                case ModuleStatus['DOWNLOADING']:
+                case ModuleStatusDOWNLOADING:
                     requestedRequired++;
                     break;
-                case ModuleStatus['PREPARING']:
+                case ModuleStatusPREPARING:
                     runningScripts.push(this.file());
                     break;
-                case ModuleStatus['ABORTED']:
+                case ModuleStatusABORTED:
                     runningScripts.pop();
                     break;
-                case ModuleStatus['SUCCESS']:
+                case ModuleStatusSUCCESS:
                     runningScripts.pop();
                     successfulRequired++;
                     that['checkRunPendingCodeNeeded']();
@@ -609,7 +608,7 @@ if (!window['require'] && window.document && !window['_nodularJS_']) {
         }
 
         Module.prototype.download =  function(forceDownload) {
-            this.setStatus(ModuleStatus['DOWNLOADING']);
+            this.setStatus(ModuleStatusDOWNLOADING);
             var req = new XMLHttpRequest();
             req.module = this;
             req.onreadystatechange = function() {
@@ -617,11 +616,11 @@ if (!window['require'] && window.document && !window['_nodularJS_']) {
                     var module = this.module;
                     if (req.status === 200) {
                         module.setSourceCode(this.responseText);
-                        module.setStatus(ModuleStatus['DOWNLOADED']);
+                        module.setStatus(ModuleStatusDOWNLOADED);
                         if (that['loglevel'] > 1) console.log('Received ' + req.module.file());
                         module.execute();
                     } else {
-                        module.setStatus(ModuleStatus['DOWNLOADERROR']);
+                        module.setStatus(ModuleStatusDOWNLOADERROR);
                         throw new URIError(module.src() + ' not accessible, status: ' + req.status + ', (required by ' + module.requiredByChain() + ')');
                     }
                 }
