@@ -3,8 +3,8 @@
 ## Attempt to reuse node.js code in a browser
 
 ### Live test
-If you want to test the code, these examples are available on  
-http://nodular.js.s3-website-eu-west-1.amazonaws.com/examples/
+If you want to test the code, these examples are available on
+https://salathegroup.github.io/nodular.js/examples/
 
 ### Notice
 
