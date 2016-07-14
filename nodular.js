@@ -82,15 +82,14 @@ if (!window['require'] && window.document && !window['_nodularJS_']) {
 
         this['ModuleStatus'] = ModuleStatus;
 
-        // This can be used to simulate randomise download reception
+        // This can be used to simulate randomised download reception
         this['downloadWithRandomDeferTime'] = false;
 
-        // Modules must have a global scope for reuse by other scripts
+        // Modules must have a global scope for access by other scripts
         this.modules           = {};
 
 
-
-        // Used for debug logs only
+        // Used for console logs only
         function scriptName(script) {
             if (script) {
                 return script.scriptName             ||
@@ -165,6 +164,7 @@ if (!window['require'] && window.document && !window['_nodularJS_']) {
             var info = insertionInfo(file);
             return `${info.key}_${info.index}`;
         }
+
         const beginMagicString = '<!-- ___ HEADER __ -->\n\n';
         const endMagicString = '\n\n<!-- ___ FOOTER __ -->';
         function copiedAndPatchedScript(script) {
@@ -212,6 +212,8 @@ if (!window['require'] && window.document && !window['_nodularJS_']) {
             delete script.patched;
         }
 
+        // A script can execute if all its known required modules have been
+        // successfully executed
         function scriptCanExecute(script) {
             if (!script) console.error('NO SCRIPT!!');
             var modules;
@@ -234,6 +236,8 @@ if (!window['require'] && window.document && !window['_nodularJS_']) {
             return true;
         }
 
+        // A module can execute if all its known required modules have been
+        // successfully executed
         function moduleCanExecute(module) {
             var requiring = module.requiring();
             for (var i=0, n=requiring.length; i<n; i++) {
