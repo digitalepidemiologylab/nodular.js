@@ -642,8 +642,21 @@ if (!window['require'] && window.document && !window['_nodularJS_']) {
             }
         }
 
+        Module.prototype.statusString = function() {
+            switch (this.status) {
+                case ModuleStatusNONE          : return 'None';
+                case ModuleStatusDOWNLOADING   : return 'Downloading';
+                case ModuleStatusDOWNLOADED    : return 'Downloading';
+                case ModuleStatusDOWNLOADERROR : return 'Download error';
+                case ModuleStatusPREPARING     : return 'Preparing';
+                case ModuleStatusABORTED       : return 'Aborted';
+                case ModuleStatusSUCCESS       : return 'Success';
+                default: return 'Invalid status';
+            }
+        }
+
         Module.prototype.toJSON = function(a, b, c) {
-            return `{file: ${this.file()}, status: ${statusStr[this.status]}}`;
+            return `{file: ${this.file()}, status: ${this.statusString()}}`;
         }
 
     };
