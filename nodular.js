@@ -304,10 +304,19 @@ if (!window['require'] && window.document && !window['_nodularJS_']) {
         }
 
         function tryDeferCurrentScript(info) {
+            // Prevent firing of default error handler
+            var onerror = window.onerror;
+            window['onerror'] = function(message, source, lineno, colno, error) {
+                window.onerror = onerror;
+                if (message === scriptAbortionMessage || error === scriptAbortionMessage) return true;
+                return error && error.isInternalError;
+            };
+
             // document.currentScript can be null if called from timeout, for instance
             var currentScript = document.currentScript;
 
             if (!currentScript) {
+                console.error('Cannot defer anonymous script');
                 // This situation is not handled, as we have no way to defer that script
                 throw new InternalError("Cancelling script");
             }
@@ -327,14 +336,6 @@ if (!window['require'] && window.document && !window['_nodularJS_']) {
             if (!inserted) {
                 pendingScripts.push(currentScript);
             }
-
-            // Prevent firing of default error handler
-            var onerror = window.onerror;
-            window['onerror'] = function(message, source, lineno, colno, error) {
-                window.onerror = onerror;
-                if (message === scriptAbortionMessage || error === scriptAbortionMessage) return true;
-                return error && error.isInternalError;
-            };
 
             // Thow exception
             throw scriptAbortionMessage;
