@@ -91,11 +91,9 @@ if (!window['require'] && window.document && !window['_nodularJS_']) {
         // Used for console logs only
         function scriptName(script) {
             if (script) {
-                return script.scriptName             ||
-                       script.orgfile                ||
+                return script.scriptName  ||
                        (script.tagName == 'SCRIPT' ? (script.id || 'SCRIPT TAG') : null) ||
-                       script
-                       ;
+                       script;
             } else {
                 return '(anonymous script)';
             }
@@ -172,7 +170,6 @@ if (!window['require'] && window.document && !window['_nodularJS_']) {
             if (script.type) {
                 s.type = script.type;
             }
-            s.orgfile       = script.orgfile;
             s.scriptName    = script.scriptName;
             s._requireIndex = script._requireIndex;
             if (script.patched) {
