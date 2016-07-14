@@ -318,9 +318,7 @@ if (!window['require'] && window.document && !window['_nodularJS_']) {
 
             var inserted = false;
             for (var i=0, len=pendingScripts.length; i<len; i++) {
-                var other = pendingScripts[i];
-                if (that['loglevel'] > 2) console.log(other._requireIndex);
-                if (other._requireIndex > currentScript._requireIndex) {
+                if (pendingScripts[i]._requireIndex > currentScript._requireIndex) {
                     pendingScripts.splice(i, 0, currentScript);
                     inserted = true;
                     break;
