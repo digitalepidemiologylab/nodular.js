@@ -20,9 +20,9 @@ if (!window['require'] && window.document && !window['_nodularJS_']) {
 
         // Settings
         const asynchronous     = false; // Should be accessible from outside?
+        const maxDeferTries    = 100;
 
-        // Hash table, for fast script lookup
-        var requires           = {};
+        var fileModules        = {};
 
         // List of pending modules
         var pendingModules     = [];
@@ -38,6 +38,8 @@ if (!window['require'] && window.document && !window['_nodularJS_']) {
 
         // Number of successfully executed requires
         var successfulRequired = 0;
+
+        this.runningModule = null;
 
         var c = 0;
 
@@ -84,16 +86,13 @@ if (!window['require'] && window.document && !window['_nodularJS_']) {
         // This can be used to simulate randomised download reception
         this['downloadWithRandomDeferTime'] = false;
 
-        // Modules must have a global scope for access by other scripts
-        this.modules           = {};
-
 
         // Used for console logs only
         function scriptName(script) {
             if (script) {
                 return script.scriptName  ||
                        (script.tagName == 'SCRIPT' ? (script.id || 'SCRIPT TAG') : null) ||
-                       script;
+                       (script.file ? script.file() : 'UNKNOWN SCRIPT');
             } else {
                 return '(anonymous script)';
             }
@@ -142,36 +141,19 @@ if (!window['require'] && window.document && !window['_nodularJS_']) {
             return hash;
         }
 
-        function insertionInfo(file) {
-            var key = stringHash(file).toString();
-            var required = requires[key];
-            if (!required) {
-                required = [];
-                requires[key] = required;
-            }
-            for (var i=0, len=required.length; i<len; i++) {
-                if (required[i] === file) {
-                    return {key: key, index: i, file: file};
-                }
-            }
-            return {key: key, index: -1, file: file};
-        }
-
-        function moduleID(file) {
-            var info = insertionInfo(file);
-            return `${info.key}_${info.index}`;
-        }
-
         const beginMagicString = '<!-- ___ HEADER __ -->\n\n';
         const endMagicString = '\n\n<!-- ___ FOOTER __ -->';
         function copiedAndPatchedScript(script) {
             var s = document.createElement('SCRIPT');
 
-            if (script.type) {
-                s.type = script.type;
-            }
-            s.scriptName    = script.scriptName;
-            s._requireIndex = script._requireIndex;
+            // Copy attributes, if present
+            script.type !== '' && (s.type = script.type);
+            script.id   !== '' && (s.id   = script.id  );
+
+            // Copy properties and code
+            s.scriptName      = script.scriptName;
+            s._requireIndex   = script._requireIndex;
+            s.deferCount      = script.deferCount;
             if (script.patched) {
                 s.innerHTML    = script.innerHTML;
                 s.orgInnerHTML = script.orgInnerHTML;
@@ -184,19 +166,10 @@ if (!window['require'] && window.document && !window['_nodularJS_']) {
                             + `\n\n}catch(e){__error__=true;throw e}finally{if (!__error__)window._nodularJS_.checkRunPendingCodeNeeded();window._nodularJS_.cleanScript();}`;
             }
             s.patched       = true;
-            s.id            = script.id;
+            s.requiring     = script.requiring;
 
-            for (key in that.modules) {
-                var module = that.modules[key];
-
-                var requiredBy = module.requiredBy(),
-                    n = requiredBy.length;
-                    for (var i=0; i<n; i++) {
-                        if (requiredBy[i] === script) {
-                            requiredBy[i] = s;
-                            break;
-                        }
-                    }
+            for (file in fileModules) {
+                fileModules[file].requiredBy.replaceFirst(script, s);
             }
 
             return s;
@@ -210,41 +183,32 @@ if (!window['require'] && window.document && !window['_nodularJS_']) {
             delete script.patched;
         }
 
-        // A script can execute if all its known required modules have been
-        // successfully executed
-        function scriptCanExecute(script) {
-            var modules;
-            if (script.requiresAll) {
-                modules = [];
-                for (var key in that.modules) {
-                    modules.push(that.modules[key]);
-                }
-            } else {
-                modules = script.requiredModules;
-            }
-            if (modules && modules.length) {
-                for (var j=0, n=modules.length; j<n; j++) {
-                    var module = modules[j];
-                    if (module.status < ModuleStatusSUCCESS) {
-                        return false;
-                    }
+        function modulesAreReady(modules) {
+            for (var i=0, n=modules.length; i<n; i++) {
+                if (!modules[i].isReady()) {
+                    return false;
                 }
             }
             return true;
         }
 
+        // A script can execute if all its known required modules have been
+        // successfully executed
+        function scriptCanExecute(script) {
+            if (script.requiresAll) {
+                for (var file in fileModules) {
+                    if (!fileModules[file].isReady()) return false;
+                }
+                return true;
+            } else {
+                return modulesAreReady(script.requiring.items);
+            }
+        }
+
         // A module can execute if all its known required modules have been
         // successfully executed
         function moduleCanExecute(module) {
-            var requiring = module.requiring();
-            for (var i=0, n=requiring.length; i<n; i++) {
-                var required = requiring[i];
-                var mod = that.modules[moduleID(required)];
-                if (mod.status < ModuleStatusSUCCESS) {
-                    return false;
-                }
-            }
-            return true;
+            return modulesAreReady(module.requiring.items);
         }
 
         function checkRunPendingCode() {
@@ -304,24 +268,22 @@ if (!window['require'] && window.document && !window['_nodularJS_']) {
         }
 
         function tryDeferCurrentScript(info) {
-            // Prevent firing of default error handler
-            var onerror = window.onerror;
-            window['onerror'] = function(message, source, lineno, colno, error) {
-                window.onerror = onerror;
-                if (message === scriptAbortionMessage || error === scriptAbortionMessage) return true;
-                return error && error.isInternalError;
-            };
-
             // document.currentScript can be null if called from timeout, for instance
             var currentScript = document.currentScript;
 
             if (!currentScript) {
-                console.error('Cannot defer anonymous script');
                 // This situation is not handled, as we have no way to defer that script
                 throw new InternalError("Cancelling script");
             }
 
-            if (that['loglevel'] > 1) console.warn('! Deferring '+ scriptName(currentScript) + ' (requires ' + (info ? info.file : 'all files') + ')');
+            currentScript.deferCount = currentScript.deferCount || 0;
+            currentScript.deferCount++;
+
+            if (currentScript.deferCount > maxDeferTries) {
+                throw 'Max number of script defering reached (' + maxDeferTries + ')';
+            }
+
+            if (that['loglevel'] > 1) console.warn('! Deferring '+ scriptName(currentScript) + ' (requires ' + (info ? info.files : 'all files') + ')');
 
             if (that['loglevel'] > 2) console.log('Adding ' + scriptName(currentScript) + ' to pending scripts (' + pendingScripts.length + ')');
 
@@ -337,6 +299,14 @@ if (!window['require'] && window.document && !window['_nodularJS_']) {
                 pendingScripts.push(currentScript);
             }
 
+            // Prevent firing of default error handler
+            var onerror = window.onerror;
+            window['onerror'] = function(message, source, lineno, colno, error) {
+                window.onerror = onerror;
+                if (message === scriptAbortionMessage || error === scriptAbortionMessage) return true;
+                return error && error.isInternalError;
+            };
+
             // Thow exception
             throw scriptAbortionMessage;
         }
@@ -350,29 +320,15 @@ if (!window['require'] && window.document && !window['_nodularJS_']) {
             if (that['loglevel'] > 2) console.log('Added  ' + scriptName(script));
         };
 
-        function requireOneFile(info, currentScript, forceDownload) {
-            requires[info.key].push(info.file);
-
-            var module = new Module(info.file);
-            module.addRequiredBy(currentScript);
-            that.modules[module.ID()] = module;
-            module.download(forceDownload);
-
-            if (document.currentScript) {
-                document.currentScript.requiredModules = document.currentScript.requiredModules || [];
-                document.currentScript.requiredModules.push(module);
-                tryDeferCurrentScript(info);
-            } else {
-                throw new InternalError(`${info.file} was required in an anonymous script`);
+        this.preload = function(files) {
+            for (var i=0, n=files.length; i<n; i++) {
+                var file = sanitizedPath(files[i]);
+                if (!fileModules[file]) {
+                    if (that['loglevel'] > 2) console.log('Preloading ' + file);
+                    var module = new Module(file);
+                    module.download(that['forceDownload']);
+                }
             }
-        }
-
-        function requireAll() {
-            if (requestedRequired != successfulRequired) {
-                if (that['loglevel'] > 2) console.log(`${requestedRequired} requested, ${successfulRequired} ready, deferring...`);
-                tryDeferCurrentScript(null);
-            }
-            if (that['loglevel'] > 2) console.log(`${requestedRequired} requested, ${successfulRequired} ready, moving on...`);
         }
 
         var runningScriptsTimeout = null;
@@ -401,73 +357,117 @@ if (!window['require'] && window.document && !window['_nodularJS_']) {
         };
 
         var currentRequireIndex = 0;
-        function setRequireIndex(script) {
-            if (typeof script._requireIndex == 'undefined') {
-                script._requireIndex = currentRequireIndex++;
-            }
-        }
-
-        this.getModule = function(file) {
-            file = sanitizedPath(file);
-            var info = insertionInfo(file);
-            if (info.index == -1) {
-                return null;
-            } else {
-                return that.modules[moduleID(file)];
-            }
-        }
-
-        this.require = function(file, forceDownload, test) {
+        var preloadWarningTimeout = null;
+        this.require = function(files, forceDownload) {
             if (document.currentScript) {
-                setRequireIndex(document.currentScript);
+                if (typeof document.currentScript._requireIndex === 'undefined') {
+                    document.currentScript._requireIndex = currentRequireIndex++;
+                    document.currentScript.requiring = new BasicOrderedSet();
+                }
             }
 
-            if (!file || !file.length) {
-                if (that['loglevel'] > 2) console.log(scriptName(currentScript) + ' required ALL');
+            if (!files || !files.length) {
+                // Require all modules
+                if (that['loglevel'] > 2) console.log(scriptName(document.currentScript) + ' required ALL');
                 if (document.currentScript) {
                     document.currentScript.requiresAll = true;
                 }
-                requireAll();
+                if (requestedRequired != successfulRequired) {
+                    if (that['loglevel'] > 2) console.log(`${requestedRequired} requested, ${successfulRequired} ready, deferring...`);
+                    // This will throw an exception and stop execution
+                    tryDeferCurrentScript(null);
+                }
+                if (that['loglevel'] > 2) console.log(`${requestedRequired} requested, ${successfulRequired} ready, moving on...`);
                 return;
             }
 
-            var currentScript;
+            var currentCode = null;
+            var currentPath = '';
             if (document.currentScript) {
-                currentScript = document.currentScript;
+                currentCode = document.currentScript;
             } else {
-                currentScript = runningScripts[runningScripts.length - 1];
-                if (currentScript) {
-                    var currentPath = removeLastPathElement(currentScript);
-                    if (currentPath.length) {
-                        file = currentPath + '/' + file;
+                currentCode = that.runningModule;
+                if (currentCode) {
+                    currentPath = removeLastPathElement(currentCode.file());
+                }
+            }
+
+            if (!currentCode) {
+                throw "require shouldn't be used in anonymous code";
+            }
+
+            // Force array
+            if (!Array.isArray(files)) {
+                files = [files];
+            }
+
+            var deferReason = [];
+            for (var i=0, n=files.length; i<n; i++) {
+                var file = files[i];
+                if (currentPath.length) {
+                    file = currentPath + '/' + file;
+                }
+                file = sanitizedPath(file);
+                if (that['loglevel'] > 2) console.log(scriptName(currentCode) + ' required ' + file);
+
+                var module = fileModules[file];
+                if (!module) {
+                    module = new Module(file);
+                    if (preloadWarningTimeout) {
+                        clearTimeout(preloadWarningTimeout);
+                    }
+                    preloadWarningTimeout = setTimeout(function() {
+                        var res = [];
+                        for (var file in fileModules) {
+                            res.unshift(file);
+                        }
+                        console.warn('Suggested preload code:\n_nodularJS_.preload(' + JSON.stringify(res) + ');');
+                    }, 2000);
+                }
+                currentCode.requiring.add(module);
+                module.requiredBy.add(currentCode);
+
+                if (module.status < ModuleStatusDOWNLOADING) {
+                    module.download(forceDownload);
+                }
+
+                if (module.status >= ModuleStatusSUCCESS) {
+                    if (that['loglevel'] > 2) console.log('Already run successfully: ' + file);
+                    if (n == 1) return module.exports;
+                } else {
+                    if (that['loglevel'] > 2) console.log('Still not run successfully: ' + file);
+                    deferReason.push(file);
+                }
+            }
+            if (deferReason.length) {
+                tryDeferCurrentScript({files: deferReason});
+            }
+        }
+
+        /**
+         * @constructor
+         */
+        function BasicOrderedSet() {
+            this.items = [];
+
+            this.add = function(value) {
+                for (var i=0, n=this.items.length; i<n; i++) {
+                    if (value === this.items[i]) return;
+                }
+                this.items.push(value);
+            }
+
+            this.replaceFirst = function(v1, v2) {
+                for (var i=0, n=this.items.length; i<n; i++) {
+                    if (v1 === this.items[i]) {
+                        this.items[i] = v2;
+                        break;
                     }
                 }
             }
 
-            file = sanitizedPath(file);
-            if (that['loglevel'] > 2) console.log(scriptName(currentScript) + ' required ' + file);
-
-            var requestingModuleID = moduleID(scriptName(currentScript));
-
-            var requestingModule = that.modules[requestingModuleID];
-            if (requestingModule) {
-                requestingModule.addRequiring(file);
-            }
-
-            var info = insertionInfo(file);
-            if (info.index == -1) {
-                if (that['loglevel'] > 2) console.log('Never heard of ' + file + ' (currently in ' + scriptName(currentScript) + ')');
-                requireOneFile(info, currentScript, forceDownload);
-            } else {
-                var module = that.modules[moduleID(file)];
-                if (module && module.status >= ModuleStatusSUCCESS) {
-                    if (that['loglevel'] > 2) console.log('Already run successfully: ' + file);
-                    module.addRequiredBy(currentScript);
-                    return module.exports;
-                } else {
-                    if (that['loglevel'] > 2) console.log('Still not run successfully: ' + file);
-                    tryDeferCurrentScript(info);
-                }
+            this.last   = function() {
+                return this.items[this.items.length - 1];
             }
         }
 
@@ -489,44 +489,32 @@ if (!window['require'] && window.document && !window['_nodularJS_']) {
                 }
             });
 
-            var requiredBy = [];
             var sourceCode = null;
-            var ID = moduleID(file);
-            var requiring = [];
-
-            this.ID   = function() { return ID;   }
             this.file = function() { return file; }
-            this.requiredBy    = function() { return requiredBy;   }
-            this.requiring     = function() { return requiring;    }
             this['sourceCode'] = function() { return sourceCode; }
 
+            this.requiring  = new BasicOrderedSet();
+            this.requiredBy = new BasicOrderedSet();
+
             this.requiredByChain = function() {
-                if (requiredBy.length == 0) return '';
+                if (this.requiredBy.items.length == 0) return '';
 
-                var requiredBys = requiredBy[requiredBy.length - 1];
-                var module = that.modules[moduleID(requiredBys)];
-                if (module) return module.file() + ' ◀ ' + module.requiredByChain();
-                return scriptName(requiredBys);
-            }
-
-            this.addRequiredBy = function(by) {
-                for (var i=0, n=requiredBy.length; i<n; i++) {
-                    if (requiredBy[i] === by) return;
+                var requiredBy = this.requiredBy.last();
+                if (requiredBy.constructor === Module) {
+                    return requiredBy.file() + ' ◀ ' + requiredBy.requiredByChain();
                 }
-                requiredBy.push(by);
-            }
-
-            this.addRequiring = function(by) {
-                for (var i=0, n=requiring.length; i<n; i++) {
-                    if (requiring[i] === by) return;
-                }
-                requiring.push(by);
+                return scriptName(requiredBy);
             }
 
             this.setSourceCode = function(code) {
                 sourceCode = code;
             }
 
+            fileModules[file] = this;
+        }
+
+        Module.prototype.isReady = function() {
+            return this.status >= ModuleStatusSUCCESS;
         }
 
         Module.prototype.src = function() {
@@ -539,10 +527,12 @@ if (!window['require'] && window.document && !window['_nodularJS_']) {
                 var moduleStore = this['module'];
                 var error = true;
                 try {
-                    eval('var module = this["module"];\n\n' + this['sourceCode']());
+                    eval('var module = moduleStore;that.runningModule=this;\n\n' + this['sourceCode']());
                     error = false;
-                    this.exports = this['module']['exports'];
-                } finally {}
+                    this.exports = moduleStore['exports'];
+                } finally {
+                    delete that.runningModule;
+                }
                 if (this['module'] !== moduleStore) throw "Error: module was replaced in required file ${this.file()}";
                 if (that['loglevel'] > 1) {
                     if (typeof this['module'].exports !== 'undefined') console.log(`  -> ${this.file()} exports: ${typeof this['module'].exports}`);
@@ -560,7 +550,7 @@ if (!window['require'] && window.document && !window['_nodularJS_']) {
 
             } catch(e) {
                 if (e.isInternalError) {
-                    if (that['loglevel'] > 1) console.warn(`<<< Aborted ${this.file()} (requires ${this.requiring().slice(-1)[0]})`);
+                    if (that['loglevel'] > 1) console.warn(`<<< Aborted ${this.file()} (requires ${this.requiring.items.slice(-1)[0]})`);
                 }
                 this.status = ModuleStatusABORTED;
                 throw e;
@@ -581,14 +571,14 @@ if (!window['require'] && window.document && !window['_nodularJS_']) {
             }
         }
 
-        Module.prototype.execute_ = function() {
-            var script = document.createElement('SCRIPT');
-            script.innerHTML = '';
-        }
-
-
         Module.prototype.onstatuschange = function() {
-            if (that['loglevel'] > 2) console.error('Modules: ' + JSON.stringify(that.modules, null, '\t'));
+            if (that['loglevel'] > 2) {
+                var res = [];
+                for (var file in fileModules) {
+                    res.push(fileModules[file]);
+                }
+                console.error('Modules: ' + JSON.stringify(res, null, '\t'));
+            }
             switch (this.status) {
                 case ModuleStatusDOWNLOADING:
                     requestedRequired++;
@@ -633,7 +623,7 @@ if (!window['require'] && window.document && !window['_nodularJS_']) {
             if (that['forceDownloads'] || forceDownload) {
                 req.setRequestHeader('Cache-Control', 'no-cache');
                 req.setRequestHeader('If-None-Match', '_A_DUMMY_ETAG');
-                req.channel && (req.channel.loadFlags |= Components.interfaces.nsIRequest.LOAD_BYPASS_CACHE);
+                req.channel && (req.channel.loadFlags |= Components['interfaces']['nsIRequest']['LOAD_BYPASS_CACHE']);
                 /*
                 // Add some random to the source to trick browser cache
                 if (src.indexOf('?') > -1) {
