@@ -550,7 +550,7 @@ if (!window['require'] && window.document && !window['_nodularJS_']) {
 
             } catch(e) {
                 if (e.isInternalError) {
-                    if (that['loglevel'] > 1) console.warn(`<<< Aborted ${this.file()} (requires ${this.requiring.items.slice(-1)[0]})`);
+                    if (that['loglevel'] > 1) console.warn(`<<< Aborted ${this.file()} (requires ${this.requiring.items.slice(-1)[0].file()})`);
                 }
                 this.status = ModuleStatusABORTED;
                 throw e;
