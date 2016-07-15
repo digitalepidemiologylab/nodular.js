@@ -123,7 +123,7 @@ if (!window['require'] && window.document && !window['_nodularJS_']) {
                 }
                 res.push(comp);
             }
-            if (res.length == 1 || res[0] != '..') {
+            if (res.length == 1 || res[0] != '..' && res[0] != '.') {
                 return './' + res.join('/');
             }
             return res.join('/');
