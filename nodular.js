@@ -475,12 +475,24 @@ if (!window['require'] && window.document && !window['_nodularJS_']) {
          * @constructor
          */
         function Module(file) {
+            var status = ModuleStatusNONE;
+
+            Object.defineProperty(this, 'status', {
+                enumerable: true,
+                configurable: false,
+                get: function() {
+                    return status;
+                },
+                set: function(value) {
+                    status = value;
+                    this.onstatuschange && this.onstatuschange();
+                }
+            });
+
             var requiredBy = [];
             var sourceCode = null;
             var ID = moduleID(file);
             var requiring = [];
-
-            this.status = ModuleStatusNONE;
 
             this.ID   = function() { return ID;   }
             this.file = function() { return file; }
@@ -515,12 +527,6 @@ if (!window['require'] && window.document && !window['_nodularJS_']) {
                 sourceCode = code;
             }
 
-            this.setStatus = function(astatus) {
-                this.status = astatus;
-                if (this.onstatuschange) {
-                    this.onstatuschange();
-                }
-            }
         }
 
         Module.prototype.src = function() {
@@ -546,7 +552,7 @@ if (!window['require'] && window.document && !window['_nodularJS_']) {
         }
 
         Module.prototype.executeCode = function() {
-            this.setStatus(ModuleStatusPREPARING);
+            this.status = ModuleStatusPREPARING;
             try {
                 if (that['loglevel'] > 1) console.log(`>>> Executing ${this.file()}`);
 
@@ -556,11 +562,11 @@ if (!window['require'] && window.document && !window['_nodularJS_']) {
                 if (e.isInternalError) {
                     if (that['loglevel'] > 1) console.warn(`<<< Aborted ${this.file()} (requires ${this.requiring().slice(-1)[0]})`);
                 }
-                this.setStatus(ModuleStatusABORTED);
+                this.status = ModuleStatusABORTED;
                 throw e;
             } finally {
             };
-            this.setStatus(ModuleStatusSUCCESS);
+            this.status = ModuleStatusSUCCESS;
         }
 
         Module.prototype.execute = function() {
@@ -605,7 +611,7 @@ if (!window['require'] && window.document && !window['_nodularJS_']) {
         }
 
         Module.prototype.download =  function(forceDownload) {
-            this.setStatus(ModuleStatusDOWNLOADING);
+            this.status = ModuleStatusDOWNLOADING;
             var req = new XMLHttpRequest();
             req.module = this;
             req.onreadystatechange = function() {
@@ -613,25 +619,30 @@ if (!window['require'] && window.document && !window['_nodularJS_']) {
                     var module = this.module;
                     if (req.status === 200) {
                         module.setSourceCode(this.responseText);
-                        module.setStatus(ModuleStatusDOWNLOADED);
-                        if (that['loglevel'] > 1) console.log('Received ' + req.module.file());
+                        if (that['loglevel'] > 1) console.log('Received ' + module.file());
+                        module.status = ModuleStatusDOWNLOADED;
                         module.execute();
                     } else {
-                        module.setStatus(ModuleStatusDOWNLOADERROR);
+                        module.status = ModuleStatusDOWNLOADERROR;
                         throw new URIError(module.src() + ' not accessible, status: ' + req.status + ', (required by ' + module.requiredByChain() + ')');
                     }
                 }
             };
             var src = this.src();
+            req.open("GET", src, true);
             if (that['forceDownloads'] || forceDownload) {
+                req.setRequestHeader('Cache-Control', 'no-cache');
+                req.setRequestHeader('If-None-Match', '_A_DUMMY_ETAG');
+                req.channel && (req.channel.loadFlags |= Components.interfaces.nsIRequest.LOAD_BYPASS_CACHE);
+                /*
                 // Add some random to the source to trick browser cache
                 if (src.indexOf('?') > -1) {
                     src += '&' + Math.random();
                 } else {
                     src += '?' + Math.random();
                 }
+                */
             }
-            req.open("GET", src, true);
             if (that['downloadWithRandomDeferTime']) {
                 setTimeout(function(){
                     req.send(null);
