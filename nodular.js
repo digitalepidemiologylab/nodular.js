@@ -27,11 +27,11 @@ if (!window['require'] && window.document && !window['_nodularJS_']) {
         // List of pending modules
         var pendingModules     = [];
 
+        // Stack of currently running modules
+        var runningModules     = [];
+
         // List of pending scripts
         var pendingScripts     = [];
-
-        // Stack of currently running scripts
-        var runningScripts     = [];
 
         // Number of requested requires
         var requestedRequired  = 0;
@@ -594,13 +594,13 @@ if (!window['require'] && window.document && !window['_nodularJS_']) {
                     requestedRequired++;
                     break;
                 case ModuleStatusPREPARING:
-                    runningScripts.push(this.file());
+                    runningModules.push(this.file());
                     break;
                 case ModuleStatusABORTED:
-                    runningScripts.pop();
+                    runningModules.pop();
                     break;
                 case ModuleStatusSUCCESS:
-                    runningScripts.pop();
+                    runningModules.pop();
                     successfulRequired++;
                     that['checkRunPendingCodeNeeded']();
                     break;
