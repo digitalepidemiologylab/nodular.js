@@ -661,7 +661,9 @@ if (!window['require'] && window.document && !window['_nodularJS_']) {
 
     };
 
-    // To still work after Closure Compiler does its job
     window['_nodularJS_'] = new _NodularJS_();
+
+    // To still work after Closure Compiler does its job
     window['require'] = window['_nodularJS_'].require;
+    window['_nodularJS_']['preload'] = window['_nodularJS_'].preload;
 }
