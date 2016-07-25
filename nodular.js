@@ -168,8 +168,8 @@ if (!window['require'] && window.document && !window['_nodularJS_']) {
             s.patched       = true;
             s.requiring     = script.requiring;
 
-            for (file in fileModules) {
-                fileModules[file].requiredBy.replaceFirst(script, s);
+            for (var i=0, files = Object.keys(fileModules), n=files.length; i<n; i++) {
+                fileModules[files[i]].requiredBy.replaceFirst(script, s);
             }
 
             return s;
@@ -196,8 +196,8 @@ if (!window['require'] && window.document && !window['_nodularJS_']) {
         // successfully executed
         function scriptCanExecute(script) {
             if (script.requiresAll) {
-                for (var file in fileModules) {
-                    if (!fileModules[file].isReady()) return false;
+                for (var i=0, files = Object.keys(fileModules), n=files.length; i<n; i++) {
+                    if (!fileModules[files[i]].isReady()) return false;
                 }
                 return true;
             } else {
@@ -418,8 +418,8 @@ if (!window['require'] && window.document && !window['_nodularJS_']) {
                     }
                     preloadWarningTimeout = setTimeout(function() {
                         var res = [];
-                        for (var file in fileModules) {
-                            res.unshift(file);
+                        for (var i=0, files = Object.keys(fileModules), n=files.length; i<n; i++) {
+                            res.unshift(files[i]);
                         }
                         console.warn('Suggested preload code:\n_nodularJS_.preload(' + JSON.stringify(res) + ');');
                     }, 2000);
@@ -574,8 +574,8 @@ if (!window['require'] && window.document && !window['_nodularJS_']) {
         Module.prototype.onstatuschange = function() {
             if (that['loglevel'] > 2) {
                 var res = [];
-                for (var file in fileModules) {
-                    res.push(fileModules[file]);
+                for (var i=0, files = Object.keys(fileModules), n=files.length; i<n; i++) {
+                    res.push(fileModules[files[i]]);
                 }
                 console.error('Modules: ' + JSON.stringify(res, null, '\t'));
             }
