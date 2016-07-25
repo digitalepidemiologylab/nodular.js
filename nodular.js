@@ -616,7 +616,9 @@ if (!window['require'] && window.document && !window['_nodularJS_']) {
                         module.execute();
                     } else {
                         module.status = ModuleStatusDOWNLOADERROR;
-                        throw new URIError(module.src() + ' not accessible, status: ' + req.status + ', (required by ' + module.requiredByChain() + ')');
+                        var bys = module.requiredByChain();
+                        throw new URIError(module.src() + ' not accessible, status: ' + req.status
+                                           + (bys ? ', (required by ' + bys + ')' : ''));
                     }
                 }
             };
