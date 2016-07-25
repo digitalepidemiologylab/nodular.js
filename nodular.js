@@ -528,6 +528,11 @@ if (!window['require'] && window.document && !window['_nodularJS_']) {
                 try {
                     eval('var module = moduleStore;that.runningModule=this;\n\n' + this['sourceCode']());
                     this.exports = moduleStore['exports'];
+                } catch (e) {
+                    if (!('isInternalError' in e)) {
+                        e.message = '(in ' + this.file() + ') ' + e.message;
+                    }
+                    throw e;
                 } finally {
                     delete that.runningModule;
                 }
