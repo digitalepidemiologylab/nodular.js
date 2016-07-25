@@ -525,10 +525,8 @@ if (!window['require'] && window.document && !window['_nodularJS_']) {
             (function () {
                 this['module'] = {'exports':{}};
                 var moduleStore = this['module'];
-                var error = true;
                 try {
                     eval('var module = moduleStore;that.runningModule=this;\n\n' + this['sourceCode']());
-                    error = false;
                     this.exports = moduleStore['exports'];
                 } finally {
                     delete that.runningModule;
@@ -554,8 +552,7 @@ if (!window['require'] && window.document && !window['_nodularJS_']) {
                 }
                 this.status = ModuleStatusABORTED;
                 throw e;
-            } finally {
-            };
+            }
             this.status = ModuleStatusSUCCESS;
         }
 
@@ -661,9 +658,7 @@ if (!window['require'] && window.document && !window['_nodularJS_']) {
 
     };
 
-    window['_nodularJS_'] = new _NodularJS_();
-
     // To still work after Closure Compiler does its job
+    window['_nodularJS_'] = new _NodularJS_();
     window['require'] = window['_nodularJS_'].require;
-    window['_nodularJS_']['preload'] = window['_nodularJS_'].preload;
 }
