@@ -120,7 +120,7 @@ if (!window['require'] && window.document && !window['_nodularJS_']) {
                         continue;
                     }
                 }
-                res.push(comp);
+                if (comp !== '.') res.push(comp);
             }
             if (res.length == 1 || res[0] != '..' && res[0] != '.') {
                 return './' + res.join('/');
@@ -523,10 +523,14 @@ if (!window['require'] && window.document && !window['_nodularJS_']) {
 
         Module.prototype.runWrappedCode = function() {
             (function () {
+                console.log('THIS: ' + this);
                 this['module'] = {'exports':{}};
                 var moduleStore = this['module'];
+                var module = moduleStore;
+                that.runningModule = this;
                 try {
-                    eval('var module = moduleStore;that.runningModule=this;\n\n' + this['sourceCode']());
+                    eval('function f__(){\n' + this['sourceCode']() + '\n}');
+                    f__();
                     this.exports = moduleStore['exports'];
                 } catch (e) {
                     if (!('isInternalError' in e)) {
