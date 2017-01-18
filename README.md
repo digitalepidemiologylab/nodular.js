@@ -256,3 +256,5 @@ Output:
 Time to execute up to the exception: 193ms
 (could be faster without debug logs)
 ```
+
+This code is released under the MIT license.
